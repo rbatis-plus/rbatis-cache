@@ -1,12 +1,12 @@
 [package]
-name = "rbatis-cache-core"
-version = "0.1.0-alpha.1"
+name = "rbatis-cache"
+version = "0.1.0-alpha.2"
 edition = "2024"
 rust-version = "1.97"
 description = "Second-level cache SPI and safe interception semantics for RBatis"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/rbatis-plus/rbatis-cache-core"
-homepage = "https://github.com/rbatis-plus/rbatis-cache-core"
+repository = "https://github.com/rbatis-plus/rbatis-cache"
+homepage = "https://github.com/rbatis-plus/rbatis-cache"
 keywords = ["rbatis", "cache", "database", "orm"]
 categories = ["caching", "database"]
 

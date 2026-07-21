@@ -1,7 +1,10 @@
-# rbatis-cache-core
+# rbatis-cache
 
-`rbatis-cache-core` defines the second-level cache SPI shared by
-`rbatis-caffeine`, `rbatis-redis`, and `rbatis-memcached`.
+`rbatis-cache` defines the second-level cache SPI shared by
+`rbatis-moka` (formerly `rbatis-caffeine`), `rbatis-redis`, and `rbatis-memcached`.
+
+> Note: This crate was previously named `rbatis-cache-core`. The repository
+> has been renamed to `rbatis-cache` (matching the Cargo crate name).
 
 Implemented invariants:
 
@@ -14,5 +17,6 @@ Implemented invariants:
 - backend errors fail open to the database loader and remain observable;
 - cached bytes represent database/encrypted state, before verification or decryption.
 
-This is an alpha contract. The RBatis executor integration and distributed
-backends are developed in their own repositories.
+This is an alpha contract. The RBatis executor integration (via the
+`rbatis::intercept::Intercept` trait) and distributed backends are developed
+in their own repositories.

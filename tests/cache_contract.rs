@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use dashmap::DashMap;
 use futures::future::BoxFuture;
-use rbatis_cache_core::{
+use rbatis_cache::{
     CacheBackend, CacheError, CacheInterceptor, CacheKey, CacheKeyInput, CachePolicy, CacheRequest,
     CacheResult, SqlMetadata, StatementKind,
 };
