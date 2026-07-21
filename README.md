@@ -1,10 +1,7 @@
 # rbatis-cache
 
 `rbatis-cache` defines the second-level cache SPI shared by
-`rbatis-moka` (formerly `rbatis-caffeine`), `rbatis-redis`, and `rbatis-memcached`.
-
-> Note: This crate was previously named `rbatis-cache-core`. The repository
-> has been renamed to `rbatis-cache` (matching the Cargo crate name).
+`rbatis-moka`, `rbatis-redis`, and `rbatis-memcached`.
 
 Implemented invariants:
 
