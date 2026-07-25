@@ -1,7 +1,7 @@
 //! Executable cache safety and concurrency contract.
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 use dashmap::DashMap;

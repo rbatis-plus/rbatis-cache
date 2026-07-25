@@ -1,16 +1,39 @@
-[package]
-name = "rbatis-cache"
-version = "0.1.0-alpha.2"
-edition = "2024"
-rust-version = "1.97"
-description = "Second-level cache SPI and safe interception semantics for RBatis"
+# ============================================================================
+# rbatis-cache workspace 根配置
+#
+# 本仓库是 rbatis 二级缓存生态的核心，按 Cargo workspace 组织为：
+#
+#   rbatis-cache       ── 二级缓存 SPI（root package）
+#   rbatis-moka        ── 进程内 backend（moka 实现，对应 Caffeine 适配器）
+#   rbatis-redis       ── Redis 分布式 backend（对应 mybatis-redis 适配器）
+#   rbatis-memcached   ── Memcached 分布式 backend（对应 mybatis-memcached 适配器）
+#
+# 参考布局：
+#   - workspace.dependencies / workspace.package / workspace.lints：与 rbatis-plus
+#     （crates/rbatis-plus-*）一致。
+#   - root package + 扁平 members：与 rbdc（rbdc-{mysql,pg,sqlite,...}）一致。
+# ============================================================================
+
+[workspace]
+resolver = "2"
+members = [
+    "rbatis-redis",
+    "rbatis-memcached",
+]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.75"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/rbatis-plus/rbatis-cache"
 homepage = "https://github.com/rbatis-plus/rbatis-cache"
-keywords = ["rbatis", "cache", "database", "orm"]
-categories = ["caching", "database"]
 
-[dependencies]
+# ============================================================================
+# 集中管理依赖版本。各 member crate 通过 dep.workspace = true 引用。
+# ============================================================================
+
+[workspace.dependencies]
+# 缓存 SPI 核心
 blake3 = "1.8.5"
 dashmap = "6.1"
 futures = "0.3"
@@ -20,18 +43,98 @@ sqlparser = { version = "0.62.0", features = ["visitor"] }
 thiserror = "2"
 tokio = { version = "1", features = ["sync", "time"] }
 
-[dev-dependencies]
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"] }
+# 上游 ORM：本 workspace 是 rbatis 生态的扩展。
+# - 本地开发：下方 `[patch]` 把 git 依赖覆盖到 `../rbatis`。
+# - crates.io 发布：`cargo publish --tag rbatis-cache-v0.1.x` 时打包器
+#   会移除 patch，依赖会解析到 git 源（待 PR 合并到 master 后）。
+# - git 依赖留待网络可达且分支已推送的环境（CI）使用；当前保留以备迁移。
+#
+# 取消注释启用 git 依赖：
+# rbatis = { git = "https://github.com/rbatis-plus/rbatis.git", branch = "feature/cache_and_tx" }
 
-[lints.rust]
+# backend 实现
+moka = { version = "0.12", features = ["future"] }
+log = "0.4"
+
+# 注：redis / memcache / flate2 各自按 backend 实际可用版本独立声明，
+# 见各 member crate 的 Cargo.toml。
+# 注：rbatis 依赖见 root package 的 [dependencies] 段（本地 path，
+# 切换 git 依赖时同步注释掉 path 即可）。
+
+[workspace.lints.rust]
 unsafe_code = "forbid"
 missing_docs = "warn"
 unused_must_use = "deny"
 
-[lints.clippy]
+[workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+# 放宽几个对实现帮助不大的 pedantic 提示
 missing_errors_doc = "allow"
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
 return_self_not_must_use = "allow"
+missing_panics_doc = "allow"          # harness 与示例代码用 expect，无 panic 边界
+cast_possible_truncation = "allow"    # u32 字节计权 + u8 variant tag 等场景需要
+cast_sign_loss = "allow"               # 同上
+cast_lossless = "allow"                # usize ↔ u64 频繁
+cast_precision_loss = "allow"
+cast_possible_wrap = "allow"
+cast_ptr_alignment = "allow"
+needless_pass_by_value = "allow"      # PropertySetter 系列 setter 参数保留所有权更清晰
+manual_let_else = "allow"
+doc_markdown = "allow"                 # 大量中文文档 / SQL/INCR 等保留原样
+module_inception = "allow"             # interceptor.rs / config.rs 等同名内嵌
+redundant_closure_for_method_calls = "allow"
+similar_names = "allow"
+struct_field_names = "allow"
+incompatible_msrv = "allow"     # 本机与 CI rustc 版本可能不同，禁用该 lint
+map_unwrap_or = "allow"         # 当前某些 match 风格更清晰
+option_if_let_else = "allow"
+type_complexity = "allow"       # backend trait 签名内 BoxFuture 多参
+assigning_clones = "allow"      # backend 多处 value.clone() 比显式赋值更清晰
+
+# ============================================================================
+# root package：rbatis-cache（SPI 核心）
+# ============================================================================
+
+[package]
+name = "rbatis-cache"
+version = "0.1.0-alpha.2"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Second-level cache SPI for RBatis (workspace root)"
+keywords = ["rbatis", "cache", "database", "orm"]
+categories = ["caching", "database"]
+
+[dependencies]
+blake3.workspace = true
+dashmap.workspace = true
+futures.workspace = true
+rmp-serde.workspace = true
+serde.workspace = true
+sqlparser.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+
+# 上游 ORM：本地开发路径依赖；CI/发布时改为上方注释中的 git 依赖。
+# 本 crate 当前不直接使用 rbatis 类型，仅作为"扩展于 rbatis 生态"
+# 的元数据；启用下方依赖以满足 workspace.dependencies 一致性检查。
+rbatis = { path = "../rbatis" }
+
+[dev-dependencies]
+# 启用自身 testing 子模块供自身集成测试使用
+rbatis-cache = { path = ".", features = ["testing"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+# 契约测试 harness：供各 backend crate 在其 dev-dependencies 里启用，
+# 复用一组标准的 CacheBackend 契约断言（生成/读回/TTL 过期/原子 bump）。
+[features]
+default = []
+testing = []
+
+[lints]
+workspace = true

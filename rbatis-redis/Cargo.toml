@@ -1,0 +1,24 @@
+[package]
+name = "rbatis-redis"
+version = "0.1.0-alpha.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Redis backend for rbatis-cache (Java analog: mybatis-redis adapter)"
+keywords = ["rbatis", "redis", "cache", "database"]
+categories = ["caching", "database"]
+
+[dependencies]
+rbatis-cache = { version = "0.1.0-alpha.2", path = ".." }
+blake3.workspace = true
+futures.workspace = true
+redis = { version = "0.27", default-features = false, features = ["tokio-comp", "connection-manager"] }
+tokio = { workspace = true, features = ["sync", "time", "rt"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,26 @@
+[package]
+name = "rbatis-memcached"
+version = "0.1.0-alpha.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Memcached backend for rbatis-cache (Java analog: mybatis-memcached adapter)"
+keywords = ["rbatis", "memcached", "cache", "database"]
+categories = ["caching", "database"]
+
+[dependencies]
+rbatis-cache = { version = "0.1.0-alpha.2", path = ".." }
+blake3.workspace = true
+futures.workspace = true
+memcache = { version = "0.17", default-features = false }
+tokio = { workspace = true, features = ["sync", "time", "rt"] }
+async-trait = "0.1"
+flate2 = "1"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[lints]
+workspace = true
