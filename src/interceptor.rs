@@ -10,8 +10,6 @@
 //! Arc<Mutex<()>>>` + `Arc::strong_count == 2` 启发式清理条目：follower
 //! 拿到 leader 的同一把锁，等 leader 完成后通过 re-check 命中缓存。
 
-#![allow(missing_docs)]
-
 use std::future::Future;
 use std::sync::Arc;
 

@@ -7,8 +7,6 @@
 //! `MemcachedConfiguration`；本 crate 用 [`std::time::Duration::from_secs`]
 //! 承担该语义（最小可用实现）。
 
-#![allow(missing_docs)]
-
 use std::time::Duration;
 
 use crate::abstract_property_setter::{PropertySetter, TypedPropertySetter};

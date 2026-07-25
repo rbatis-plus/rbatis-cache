@@ -17,8 +17,6 @@
 //!   interceptor 层处理）；backend 自身存储过期时间戳并按需清理。
 //! - generation 原子计数由 `DashMap<String, AtomicU64>` 承担。
 
-#![allow(missing_docs)]
-
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};

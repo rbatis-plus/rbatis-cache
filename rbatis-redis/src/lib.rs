@@ -23,7 +23,9 @@ mod serializer;
 
 pub use configuration_builder::RedisConfigurationBuilder;
 pub use dummy_read_write_lock::DummyReadWriteLock;
-pub use redis_cache::{RedisCacheBackend, RedisCacheConfig, RedisMetricsSnapshot};
+pub use redis_cache::{RedisCacheBackend, RedisMetricsSnapshot};
 pub use redis_callback::RedisCallback;
-pub use redis_config::RedisConfig;
-pub use serializer::{JdkSerializer, KryoSerializer, Serializer};
+pub use redis_config::{RedisCacheConfig, RedisConfig};
+pub use serializer::{
+    serializer_by_name, JdkSerializer, KryoSerializer, Serializer, SerializerImpl,
+};

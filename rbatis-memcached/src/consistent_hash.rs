@@ -9,8 +9,6 @@
 //! 实现：使用 BLAKE3 在 `(node, replica)` 元组上做 64 位哈希，按值
 //! 排序插入 `BTreeMap`，查询时取首个 >= 查询 key 的点。
 
-#![allow(missing_docs)]
-
 use std::collections::BTreeMap;
 
 /// 一致性哈希环。

@@ -20,7 +20,6 @@
 //! }
 //! ```
 
-#![allow(missing_docs)]
 #![allow(clippy::expect_used)]
 
 use std::sync::Arc;

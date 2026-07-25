@@ -3,8 +3,6 @@
 //! 对应 Java：`org.mybatis.caches.memcached.StringUtils`
 //! （位于 `/workspace-github/memcached-cache/src/main/java/org/mybatis/caches/memcached/StringUtils.java`）。
 
-#![allow(missing_docs)]
-
 /// 字符串工具：剥离首尾 ASCII 空白。
 ///
 /// 对应 `StringUtils#trimToNull(String)` / `StringUtils#isEmpty(String)`。

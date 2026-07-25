@@ -6,8 +6,6 @@
 //! Java 侧用 JavaBean introspection + 各 `*PropertySetter` 把字符串转换
 //! 成强类型字段；本 crate 用集中式 [`apply_kv`] 维护相同字段表。
 
-#![allow(missing_docs)]
-
 use std::time::Duration;
 
 use crate::configuration::{ConnectionFactoryKind, MemcachedConfiguration};

@@ -3,8 +3,6 @@
 //! 对应 Java：`org.mybatis.caches.memcached.BooleanPropertySetter`
 //! （位于 `/workspace-github/memcached-cache/src/main/java/org/mybatis/caches/memcached/BooleanPropertySetter.java`）。
 
-#![allow(missing_docs)]
-
 use crate::abstract_property_setter::{PropertySetter, TypedPropertySetter};
 use crate::configuration::MemcachedConfiguration;
 

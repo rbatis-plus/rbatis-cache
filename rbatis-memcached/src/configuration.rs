@@ -19,8 +19,6 @@
 //! | `username` | `username` |
 //! | `password` | `password` |
 
-#![allow(missing_docs)]
-
 use std::time::Duration;
 
 /// ConnectionFactory 协议选择。

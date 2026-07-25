@@ -8,8 +8,6 @@
 //! 的配置面，并保留 `key_prefix` / `operation_timeout` 等由
 //! `rbatis-cache` SPI 需要的字段。
 
-#![allow(missing_docs)]
-
 use std::time::Duration;
 
 /// Redis 单节点 URL。
@@ -84,5 +82,39 @@ impl RedisConfig {
     pub fn with_database(mut self, database: u8) -> Self {
         self.database = database;
         self
+    }
+}
+
+/// Redis backend 的完整配置（连接配置 + backend 行为配置）。
+///
+/// Java 侧 `RedisConfig` 通过继承 `JedisPoolConfig` 获得连接池参数；
+/// 本 crate 拆为两层：[`RedisConfig`] 承载 Java 同名类的字段面，本
+/// 类型承载 backend 行为面（key 前缀、熔断），两者组合使用。
+///
+/// 熔断参数属于 **Rust 侧增强，无 Java 对应**。
+#[derive(Debug, Clone)]
+pub struct RedisCacheConfig {
+    /// 内部连接配置。
+    pub redis: RedisConfig,
+    /// 前缀：拼到每条数据 key 与 generation key 之前。
+    pub key_prefix: String,
+    /// 单次操作超时（覆盖 [`RedisConfig::operation_timeout`]）。
+    pub operation_timeout: Duration,
+    /// 连续失败次数达到此值打开熔断（Rust 侧增强）。
+    pub circuit_failure_threshold: u32,
+    /// 熔断冷却时间（Rust 侧增强）。
+    pub circuit_cooldown: Duration,
+}
+
+impl RedisCacheConfig {
+    /// 由 [`RedisConfig`] 派生默认 backend 配置。
+    pub fn from_redis(redis: RedisConfig) -> Self {
+        Self {
+            operation_timeout: redis.operation_timeout,
+            redis,
+            key_prefix: "rbatis:cache".to_owned(),
+            circuit_failure_threshold: 3,
+            circuit_cooldown: Duration::from_secs(5),
+        }
     }
 }

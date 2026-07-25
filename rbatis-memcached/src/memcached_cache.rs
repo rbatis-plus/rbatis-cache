@@ -16,8 +16,6 @@
 //!   由 spymemcached 内部 ketama-hash 路由，本 crate 显式提供以支持
 //!   后端无关的路由策略。
 
-#![allow(missing_docs)]
-
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 

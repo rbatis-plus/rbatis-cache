@@ -7,8 +7,6 @@
 //! 所有 backend 必须把内部错误统一映射到这四种变体之一，绝不向上
 //! 泄漏底层 client 库的细节（Redis 错误码、Memcached 协议错误等）。
 
-#![allow(missing_docs)]
-
 use std::fmt;
 
 /// 缓存层统一错误类型。

@@ -7,8 +7,6 @@
 //! `MemcachedConfiguration` 字段的强类型值；本 crate 用 trait + 注册表
 //! 实现等价语义。
 
-#![allow(missing_docs)]
-
 use crate::configuration::MemcachedConfiguration;
 
 /// setter 注册表 trait：把字符串值写入 [`MemcachedConfiguration`]。

@@ -7,8 +7,6 @@
 //! `-Dredis.properties=path` 指定的文件）。本 crate 用 `std::env::var`
 //! 读取 `REDIS_PROPERTIES` 环境变量，缺省回退 [`RedisConfig::standalone`]。
 
-#![allow(missing_docs)]
-
 use std::time::Duration;
 
 use crate::redis_config::RedisConfig;

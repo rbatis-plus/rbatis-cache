@@ -9,8 +9,6 @@
 //! 与 Caffeine / Redis 适配器同款做法，长度前缀保证 `("ab","c")` 与
 //! `("a","bc")` 永不冲突。
 
-#![allow(missing_docs)]
-
 use std::collections::BTreeSet;
 
 use blake3::Hasher;

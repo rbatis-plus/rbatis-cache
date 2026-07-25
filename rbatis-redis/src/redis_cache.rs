@@ -20,8 +20,6 @@
 //! 注意：当前实现是**纯 SPI 实现**，未启用 cluster/sentinel/Pub-Sub
 //! 失效广播——后续可按 [`RedisCacheConfig`] 扩展点叠加。
 
-#![allow(missing_docs)]
-
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -30,37 +28,7 @@ use rbatis_cache::{CacheBackend, CacheError, Result};
 use redis::aio::ConnectionManager;
 use redis::{AsyncCommands, Client};
 
-use crate::redis_config::RedisConfig;
-
-/// 熔断阈值配置。
-///
-/// Java 侧没有熔断——本 crate 强化稳健性，作为**无 Java 对应的 Rust 增强**。
-#[derive(Debug, Clone)]
-pub struct RedisCacheConfig {
-    /// 内部配置。
-    pub redis: RedisConfig,
-    /// 前缀：拼到每条数据 key 与 generation key 之前。
-    pub key_prefix: String,
-    /// 单次操作超时（覆盖 [`RedisConfig::operation_timeout`]）。
-    pub operation_timeout: Duration,
-    /// 连续失败次数达到此值打开熔断。
-    pub circuit_failure_threshold: u32,
-    /// 熔断冷却时间。
-    pub circuit_cooldown: Duration,
-}
-
-impl RedisCacheConfig {
-    /// 由 [`RedisConfig`] 派生默认 [`RedisCacheConfig`]。
-    pub fn from_redis(redis: RedisConfig) -> Self {
-        Self {
-            operation_timeout: redis.operation_timeout,
-            redis,
-            key_prefix: "rbatis:cache".to_owned(),
-            circuit_failure_threshold: 3,
-            circuit_cooldown: Duration::from_secs(5),
-        }
-    }
-}
+use crate::redis_config::RedisCacheConfig;
 
 /// 指标快照。
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]

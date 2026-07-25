@@ -6,8 +6,6 @@
 //! Java 侧在序列化/反序列化时调用 GZIP 压缩；本 crate 用 `flate2::write::GzEncoder`
 //! 实现等价语义。
 
-#![allow(missing_docs)]
-
 use flate2::read::GzDecoder;
 use flate2::write::GzEncoder;
 use flate2::Compression;

@@ -6,8 +6,6 @@
 //! 类型自然对应），并在 envelope 内显式携带 version / generation / expires_at_ms
 //! / table_tags，便于任何 backend 透明地解释存储内容。
 
-#![allow(missing_docs)]
-
 use std::collections::BTreeSet;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 

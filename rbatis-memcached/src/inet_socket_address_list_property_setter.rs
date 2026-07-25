@@ -3,8 +3,6 @@
 //! 对应 Java：`org.mybatis.caches.memcached.InetSocketAddressListPropertySetter`
 //! （位于 `/workspace-github/memcached-cache/src/main/java/org/mybatis/caches/memcached/InetSocketAddressListPropertySetter.java`）。
 
-#![allow(missing_docs)]
-
 use std::fmt;
 
 use crate::abstract_property_setter::{PropertySetter, TypedPropertySetter};

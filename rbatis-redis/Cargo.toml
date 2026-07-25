@@ -14,6 +14,8 @@ categories = ["caching", "database"]
 rbatis-cache = { version = "0.1.0-alpha.2", path = ".." }
 blake3.workspace = true
 futures.workspace = true
+rmp-serde.workspace = true
+serde.workspace = true
 redis = { version = "0.27", default-features = false, features = ["tokio-comp", "connection-manager"] }
 tokio = { workspace = true, features = ["sync", "time", "rt"] }
 

@@ -10,8 +10,6 @@
 //! 本 crate 在 `rbatis-cache` SPI 上对应为：每条 [`CacheKey`] 的
 //! generation 计数（参见 [`crate::memcached_cache`]）即同一思想。
 
-#![allow(missing_docs)]
-
 use std::sync::Arc;
 
 use memcache::Client;

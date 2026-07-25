@@ -8,8 +8,6 @@
 //! flush 概念对齐；当配置 `InvalidationStrategy::TableGeneration` 时，
 //! 任何对该表的写入都能精确失效相关条目。
 
-#![allow(missing_docs)]
-
 use std::collections::BTreeSet;
 use std::ops::ControlFlow;
 

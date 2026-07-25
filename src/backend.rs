@@ -13,8 +13,6 @@
 //! - trait 方法使用 `BoxFuture` 是为了让 backend 类型成为 dyn-compatible，
 //!   从而 `Arc<dyn CacheBackend>` 可直接作为 [`CacheInterceptor`](crate::CacheInterceptor) 的字段。
 
-#![allow(missing_docs)]
-
 use std::time::Duration;
 
 use futures::future::BoxFuture;

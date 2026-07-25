@@ -6,8 +6,6 @@
 //! Java 侧定义为函数式接口 `T doWithRedis(Jedis jedis)`，本 crate 用
 //! 闭包 + 共享 [`redis::aio::ConnectionManager`] 实现等价语义。
 
-#![allow(missing_docs)]
-
 use redis::aio::ConnectionManager;
 use redis::RedisResult;
 

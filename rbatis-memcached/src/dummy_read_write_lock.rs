@@ -3,8 +3,6 @@
 //! 对应 Java：`org.mybatis.caches.memcached.DummyReadWriteLock`
 //! （位于 `/workspace-github/memcached-cache/src/main/java/org/mybatis/caches/memcached/DummyReadWriteLock.java`）。
 
-#![allow(missing_docs)]
-
 use std::sync::Mutex;
 
 /// 空读写锁：read 与 write 都通过同一个 [`Mutex`] 串行化，语义上等价于

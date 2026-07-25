@@ -7,8 +7,6 @@
 //! crate 不暴露该约定，但保留同源类型以便上层装饰器在跨语言移植时
 //! 仍能找到对等件。
 
-#![allow(missing_docs)]
-
 use std::sync::Mutex;
 
 /// 空读写锁：read 与 write 都通过同一个 [`Mutex`] 串行化，语义上等价于

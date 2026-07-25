@@ -5,8 +5,6 @@
 //! 与 [`CacheInterceptor`](crate::CacheInterceptor) 紧耦合，任何 backend
 //! 都自动继承。
 
-#![allow(missing_docs)]
-
 use std::sync::atomic::{AtomicU64, Ordering};
 
 /// 指标快照，可安全地在任意线程之间传递。
