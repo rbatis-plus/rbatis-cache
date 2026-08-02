@@ -44,13 +44,9 @@ thiserror = "2"
 tokio = { version = "1", features = ["sync", "time"] }
 
 # 上游 ORM：本 workspace 是 rbatis 生态的扩展。
-# - 本地开发：下方 `[patch]` 把 git 依赖覆盖到 `../rbatis`。
-# - crates.io 发布：`cargo publish --tag rbatis-cache-v0.1.x` 时打包器
-#   会移除 patch，依赖会解析到 git 源（待 PR 合并到 master 后）。
-# - git 依赖留待网络可达且分支已推送的环境（CI）使用；当前保留以备迁移。
-#
-# 取消注释启用 git 依赖：
-# rbatis = { git = "https://github.com/rbatis-plus/rbatis.git", branch = "feature/cache_and_tx" }
+# - git 依赖跟随 rbatis fork 的 fix/transaction-listener 分支（见
+#   [dependencies] 段）；该分支 PR 合入上游并发布后切回 crates.io 版本。
+# - 本地离线开发时，可临时把 [dependencies].rbatis 改回 path 依赖。
 
 # backend 实现
 moka = { version = "0.12", features = ["future"] }
@@ -123,10 +119,15 @@ sqlparser.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 
-# 上游 ORM：本地开发路径依赖；CI/发布时改为上方注释中的 git 依赖。
-# 执行器集成层（RbatisCacheInterceptor / CacheTransactionListener /
-# RbatisCacheExt）消费上游 fix/transaction-listener 分支的公开 API：
-# Intercept / Action / ResultType / add_listener。
+# 上游 ORM：本地开发用 file:// 指向本地 rbatis 仓库的
+# fix/transaction-listener 分支（TransactionListener hook + apply_after
+# 短路修复）。执行器集成层（RbatisCacheInterceptor / CacheTransactionListener /
+# RbatisCacheExt）消费该分支的公开 API：Intercept / Action / ResultType /
+# add_listener。
+#
+# 切换时机：fix/transaction-listener 分支 PR 合入 rbatis 上游并发布后，
+# 把下面依赖改为 https 仓库（或 crates.io 版本）：
+#   rbatis = { git = "https://github.com/rbatis-plus/rbatis.git", branch = "fix/transaction-listener" }
 rbatis = { git = "file:///Users/wandl/workspaces/workspace-github-easy-4-rust/rbatis", branch = "fix/transaction-listener" }
 
 [dev-dependencies]
