@@ -20,6 +20,8 @@ redis = { version = "0.27", default-features = false, features = ["tokio-comp", 
 tokio = { workspace = true, features = ["sync", "time", "rt"] }
 
 [dev-dependencies]
+# 复用 rbatis-cache 的 backend 契约测试 harness
+rbatis-cache = { path = "..", features = ["testing"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [lints]

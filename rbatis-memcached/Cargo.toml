@@ -21,6 +21,8 @@ flate2 = "1"
 log.workspace = true
 
 [dev-dependencies]
+# 复用 rbatis-cache 的 backend 契约测试 harness
+rbatis-cache = { path = "..", features = ["testing"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [lints]

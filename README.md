@@ -39,6 +39,49 @@ rbatis-cache/                ← workspace 根（root package = rbatis-cache）
 > Caffeine 适配器的等价实现；命名上不再单独抽出 `rbatis-moka` member），
 > 后续若需要 W-TinyLFU 等 Caffeine 高级特性，可在此基础上叠加。
 
+## 快速开始（独立使用，不依赖 rbatis-plus）
+
+`rbatis-cache` 可单独给 rbatis 增加 MyBatis-3 同款的二级缓存能力
+（L1 会话缓存 + L2 分布式缓存 + singleflight 防击穿 + 事务一致性），
+三步接入：
+
+```rust
+use std::sync::Arc;
+use rbatis::RBatis;
+use rbatis_cache::{
+    CachePolicy, LocalBackend, RbatisCacheExt, RbatisCacheInterceptor,
+};
+
+let rb = RBatis::new();
+// 1. 初始化 rbatis（任意 rbdc 驱动）
+rb.init(rbdc_sqlite::SqliteDriver {}, "sqlite://app.db")?;
+// 2. 构造缓存拦截器（namespace 是缓存隔离边界；backend 可选 LocalBackend /
+//    rbatis_redis::RedisCacheBackend / rbatis_memcached::MemcachedCacheBackend）
+let cache = RbatisCacheInterceptor::new(
+    "app_ns",
+    Arc::new(LocalBackend::new()),
+    CachePolicy::default().with_ttl(std::time::Duration::from_secs(60)),
+);
+// 3. 安装：拦截器进拦截链，监听器保证事务提交/回滚与缓存一致
+let listener = cache.listener();
+rb.install_cache(Arc::new(cache), Some(Arc::new(listener)));
+```
+
+接入后行为（对齐 mybatis-3）：
+
+- SELECT 命中 L1/L2 直接返回，miss 走数据库并回填；
+- `FOR UPDATE` / `FOR SHARE` 与事务内查询（Bypass 模式）不缓存；
+- DML（`rows_affected > 0`）立即失效 L1 并 bump namespace generation；
+- 事务 commit 冲刷 / rollback 丢弃（Defer 模式）或 commit 后失效（Bypass）；
+- 可选策略：`use_cache_filter` 按语句过滤、`cache_null` / `null_ttl` 防穿透、
+  `max_value_size` 防大值、`without_blocking` 关闭 singleflight、
+  `LocalBackendConfig::with_max_entries_{fifo,lfu,lru}` 有界驱逐、
+  `with_cleanup_interval` 后台清理。
+
+> 上游依赖：`RbatisCacheInterceptor` / `CacheTransactionListener` 消费
+> rbatis `fix/transaction-listener` 分支的 `TransactionListener` hook
+> （见根 `Cargo.toml` 依赖注释；该 hook 合入上游后切回 crates.io 版本）。
+
 ## 已落实不变量
 
 - 仅缓存 sqlparser 解析后的 `SELECT` 单语句（非事务）；
