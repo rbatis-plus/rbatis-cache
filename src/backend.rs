@@ -17,6 +17,7 @@ use std::time::Duration;
 
 use futures::future::BoxFuture;
 
+use crate::policy::{CacheFailureMode, TransactionCacheMode, UseCacheFilter};
 use crate::Result;
 
 /// Generation-based 失效策略。
@@ -30,7 +31,7 @@ pub enum InvalidationStrategy {
     TableGeneration,
 }
 
-/// 缓存策略：TTL、大小限制、失效粒度。
+/// 缓存策略：TTL、大小限制、失效粒度与执行器集成扩展。
 #[derive(Debug, Clone)]
 pub struct CachePolicy {
     /// 条目过期时间（写时作为 envelope 的 expires_at_ms）。
@@ -39,6 +40,20 @@ pub struct CachePolicy {
     pub max_value_size: usize,
     /// 失效策略。
     pub invalidation: InvalidationStrategy,
+    /// 空结果（`Null` / 空数组）是否缓存；`false` 时只进 L1 不进 L2。
+    pub cache_null: bool,
+    /// 空结果的独立 TTL（防穿透；`None` 时使用 [`Self::ttl`]）。
+    pub null_ttl: Option<Duration>,
+    /// backend 故障时的行为（默认 fail-open）。
+    pub failure_mode: CacheFailureMode,
+    /// 缓存与事务的交互模式（默认 Bypass）。
+    pub transaction_mode: TransactionCacheMode,
+    /// 按语句过滤谓词（默认缓存所有可解析 SELECT）。
+    pub use_cache_filter: Option<UseCacheFilter>,
+    /// 是否启用 singleflight 防击穿（默认开启）。
+    pub blocking: bool,
+    /// 每 executor 会话 L1 最大条目数（默认 256，超出驱逐最旧条目）。
+    pub l1_max_entries: usize,
 }
 
 impl Default for CachePolicy {
@@ -47,7 +62,64 @@ impl Default for CachePolicy {
             ttl: Duration::from_mins(5),
             max_value_size: 1024 * 1024,
             invalidation: InvalidationStrategy::NamespaceGeneration,
+            cache_null: true,
+            null_ttl: Some(Duration::from_secs(10)),
+            failure_mode: CacheFailureMode::FailOpen,
+            transaction_mode: TransactionCacheMode::Bypass,
+            use_cache_filter: None,
+            blocking: true,
+            l1_max_entries: 256,
         }
+    }
+}
+
+impl CachePolicy {
+    /// 设置条目 TTL。
+    pub fn with_ttl(mut self, ttl: Duration) -> Self {
+        self.ttl = ttl;
+        self
+    }
+
+    /// 空结果是否进入 L2（`null_ttl` 生效的前提是 `cache_null = true`）。
+    pub fn with_cache_null(mut self, v: bool) -> Self {
+        self.cache_null = v;
+        self
+    }
+
+    /// 设置空结果的独立 TTL。
+    pub fn with_null_ttl(mut self, ttl: Duration) -> Self {
+        self.null_ttl = Some(ttl);
+        self
+    }
+
+    /// 设置 backend 故障模式为 fail-closed（向调用方传播错误）。
+    pub fn with_failure_closed(mut self) -> Self {
+        self.failure_mode = CacheFailureMode::FailClosed;
+        self
+    }
+
+    /// 设置事务模式为 `Defer`（MyBatis `TransactionalCache` 语义）。
+    pub fn with_transaction_defer(mut self) -> Self {
+        self.transaction_mode = TransactionCacheMode::Defer;
+        self
+    }
+
+    /// 按语句谓词过滤（返回 `true` 的 SQL 才参与缓存）。
+    pub fn with_use_cache_filter(mut self, filter: UseCacheFilter) -> Self {
+        self.use_cache_filter = Some(filter);
+        self
+    }
+
+    /// 关闭 singleflight。
+    pub fn without_blocking(mut self) -> Self {
+        self.blocking = false;
+        self
+    }
+
+    /// 设置每 executor 会话 L1 最大条目数。
+    pub fn with_l1_max_entries(mut self, n: usize) -> Self {
+        self.l1_max_entries = n;
+        self
     }
 }
 

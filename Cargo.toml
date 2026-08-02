@@ -111,9 +111,12 @@ keywords = ["rbatis", "cache", "database", "orm"]
 categories = ["caching", "database"]
 
 [dependencies]
+async-trait = "0.1"
 blake3.workspace = true
 dashmap.workspace = true
 futures.workspace = true
+log.workspace = true
+rbs = "4"
 rmp-serde.workspace = true
 serde.workspace = true
 sqlparser.workspace = true
@@ -121,9 +124,10 @@ thiserror.workspace = true
 tokio.workspace = true
 
 # 上游 ORM：本地开发路径依赖；CI/发布时改为上方注释中的 git 依赖。
-# 本 crate 当前不直接使用 rbatis 类型，仅作为"扩展于 rbatis 生态"
-# 的元数据；启用下方依赖以满足 workspace.dependencies 一致性检查。
-rbatis = { path = "../rbatis" }
+# 执行器集成层（RbatisCacheInterceptor / CacheTransactionListener /
+# RbatisCacheExt）消费上游 fix/transaction-listener 分支的公开 API：
+# Intercept / Action / ResultType / add_listener。
+rbatis = { git = "file:///Users/wandl/workspaces/workspace-github-easy-4-rust/rbatis", branch = "fix/transaction-listener" }
 
 [dev-dependencies]
 # 启用自身 testing 子模块供自身集成测试使用

@@ -12,6 +12,7 @@
 
 use std::future::Future;
 use std::sync::Arc;
+use std::time::Duration;
 
 use dashmap::mapref::entry::Entry;
 use dashmap::DashMap;
@@ -142,6 +143,51 @@ where
         let generation = self.backend.bump_generation(namespace).await?;
         self.metrics.record_invalidation();
         Ok(generation)
+    }
+
+    /// 只读路径：按当前 generation 构造键并查找 L2（不含 singleflight）。
+    ///
+    /// 供执行器集成层（[`crate::RbatisCacheInterceptor`]）在 `before`
+    /// 钩子中使用：命中返回 envelope payload 字节，miss 返回 `None`。
+    /// backend / generation / 解码故障一律降级为 miss（fail-open）。
+    pub async fn lookup(&self, key_input: CacheKeyInput<'_>) -> Result<Option<Vec<u8>>> {
+        let Ok(generation) = self.backend.generation(key_input.namespace).await else {
+            self.metrics.record_backend_error();
+            return Ok(None);
+        };
+        let Ok(key) = CacheKey::build(key_input, generation) else {
+            return Ok(None);
+        };
+        Ok(self.cached(&key).await)
+    }
+
+    /// 只写路径：把 payload 编码为 envelope 写入 L2（受 `max_value_size`
+    /// 限制；超限静默跳过）。供执行器集成层在 `after` 钩子中使用。
+    pub async fn store(
+        &self,
+        key_input: CacheKeyInput<'_>,
+        payload: Vec<u8>,
+        ttl: Duration,
+    ) -> Result<()> {
+        if payload.len() > self.policy.max_value_size {
+            return Ok(());
+        }
+        let Ok(generation) = self.backend.generation(key_input.namespace).await else {
+            self.metrics.record_backend_error();
+            return Ok(());
+        };
+        let key = CacheKey::build(key_input, generation)?;
+        let envelope = CacheEnvelope::new(&key, payload, ttl).encode()?;
+        if self
+            .backend
+            .put(key.digest(), envelope, ttl)
+            .await
+            .is_err()
+        {
+            self.metrics.record_backend_error();
+            // failure_mode 由执行器集成层决定如何向调用方传播。
+        }
+        Ok(())
     }
 
     /// 取出 envelope 字节并解码；返回 None 表示 miss（不存在 / 已过期 /

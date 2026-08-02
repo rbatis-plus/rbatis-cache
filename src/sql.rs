@@ -36,6 +36,10 @@ pub struct SqlMetadata {
     pub table_tags: BTreeSet<String>,
     /// 语句分类。
     pub kind: StatementKind,
+    /// 是否为带 `FOR UPDATE` / `FOR SHARE` 锁的 SELECT。
+    ///
+    /// 这类查询的结果随事务隔离级别变化，缓存会破坏语义，必须排除。
+    pub locking_select: bool,
 }
 
 impl SqlMetadata {
@@ -58,15 +62,30 @@ impl SqlMetadata {
             table_tags.insert(relation.to_string().to_ascii_lowercase());
             ControlFlow::Continue(())
         });
+        // FOR UPDATE / FOR SHARE 排除：sqlparser 0.62 的 `Select` 尚无
+        // 标准化的 lock 字段，保守采用规范化 SQL 的小写匹配（与常见
+        // `SELECT ... FOR UPDATE` 写法兼容）。
+        let canonical = statements
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join("; ");
+        let lower = canonical.to_ascii_lowercase();
+        let locking_select =
+            kind == StatementKind::Select && (lower.contains("for update") || lower.contains("for share"));
         Ok(Self {
             // 多个语句以 "; " 连接；单语句则与原文一致（解析器规范化后输出）。
-            canonical_sql: statements
-                .iter()
-                .map(ToString::to_string)
-                .collect::<Vec<_>>()
-                .join("; "),
+            canonical_sql: canonical,
             table_tags,
             kind,
+            locking_select,
         })
+    }
+
+    /// 该语句是否允许进入缓存。
+    ///
+    /// 必须同时满足：单条可解析 SELECT、非锁定读（FOR UPDATE/SHARE）。
+    pub fn is_cacheable(&self) -> bool {
+        self.kind == StatementKind::Select && !self.locking_select
     }
 }

@@ -42,9 +42,16 @@ mod envelope;
 mod error;
 mod interceptor;
 mod key;
+mod l1;
+mod listener;
 mod local_backend;
 mod metrics;
+mod plugin;
+mod policy;
+mod rbatis_intercept;
+mod singleflight;
 mod sql;
+mod transactional;
 
 #[cfg(feature = "testing")]
 pub mod testing;
@@ -58,9 +65,16 @@ pub use envelope::CacheEnvelope;
 pub use error::CacheError;
 pub use interceptor::{CacheInterceptor, CacheRequest};
 pub use key::{CacheKey, CacheKeyInput};
+pub use l1::L1Cache;
+pub use listener::CacheTransactionListener;
 pub use local_backend::{LocalBackend, LocalBackendConfig};
 pub use metrics::{CacheMetrics, CacheMetricsSnapshot};
+pub use plugin::RbatisCacheExt;
+pub use policy::{CacheFailureMode, TransactionCacheMode, UseCacheFilter};
+pub use rbatis_intercept::RbatisCacheInterceptor;
+pub use singleflight::{LoadRole, LoadState, SingleFlight};
 pub use sql::{SqlMetadata, StatementKind};
+pub use transactional::TransactionalCacheBuffer;
 
 /// 缓存层统一返回类型别名。
 pub type CacheResult<T> = std::result::Result<T, CacheError>;

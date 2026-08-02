@@ -61,32 +61,32 @@ impl CacheMetrics {
     }
 
     /// 内部：命中 +1。
-    pub(crate) fn record_hit(&self) {
+    pub fn record_hit(&self) {
         self.hits.fetch_add(1, Ordering::Relaxed);
     }
 
     /// 内部：未命中 +1。
-    pub(crate) fn record_miss(&self) {
+    pub fn record_miss(&self) {
         self.misses.fetch_add(1, Ordering::Relaxed);
     }
 
     /// 内部：旁路 +1。
-    pub(crate) fn record_bypass(&self) {
+    pub fn record_bypass(&self) {
         self.bypasses.fetch_add(1, Ordering::Relaxed);
     }
 
     /// 内部：backend 错误 +1。
-    pub(crate) fn record_backend_error(&self) {
+    pub fn record_backend_error(&self) {
         self.backend_errors.fetch_add(1, Ordering::Relaxed);
     }
 
     /// 内部：数据库加载 +1。
-    pub(crate) fn record_load(&self) {
+    pub fn record_load(&self) {
         self.loads.fetch_add(1, Ordering::Relaxed);
     }
 
     /// 内部：generation 失效 +1。
-    pub(crate) fn record_invalidation(&self) {
+    pub fn record_invalidation(&self) {
         self.invalidations.fetch_add(1, Ordering::Relaxed);
     }
 }

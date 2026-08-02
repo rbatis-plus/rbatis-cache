@@ -713,12 +713,15 @@ codegraph query "assert_missing_key_is_none\|assert_generation_atomic\|assert_tt
 2. `src/backend.rs` + `src/key.rs` + `src/envelope.rs`（**契约三件套**）
 3. `src/sql.rs` + `src/metrics.rs`
 4. `src/error.rs`
-5. `src/interceptor.rs`（**流程核心**）
-6. `src/local_backend.rs`（backend 实现的样板）
-7. `src/testing.rs`（如何验证 backend 实现）
-8. `rbatis-redis/src/redis_cache.rs` + `redis_config.rs`
-9. `rbatis-memcached/src/memcached_cache.rs` + `consistent_hash.rs`
-10. 跑 `cargo test --all -- --nocapture` 看契约测试
+5. `src/interceptor.rs`（**SPI 流程核心**：`get_or_load` 单方法流水线）
+6. `src/rbatis_intercept.rs`（**执行器集成层**：before/after 两段式钩子）+
+   `src/l1.rs` + `src/singleflight.rs` + `src/transactional.rs` + `src/listener.rs`
+7. `src/plugin.rs`（`RbatisCacheExt::install_cache` 注册入口）
+8. `src/local_backend.rs`（backend 实现的样板）
+9. `src/testing.rs`（如何验证 backend 实现）
+10. `rbatis-redis/src/redis_cache.rs` + `redis_config.rs`
+11. `rbatis-memcached/src/memcached_cache.rs` + `consistent_hash.rs`
+12. 跑 `cargo test --all -- --nocapture` 看契约测试 + `tests/cache_test.rs` 端到端
 
 ---
 
@@ -730,11 +733,43 @@ codegraph query "assert_missing_key_is_none\|assert_generation_atomic\|assert_tt
 2. **`RedisCacheBackend` 未启用 cluster / sentinel / Pub-Sub 失效广播**：`RedisCacheConfig` 已留扩展点（如 `key_prefix`），但代码路径无集群相关字段。
 3. **`rbatis-redis/src/serializer.rs`：`JdkSerializer` / `KryoSerializer` 为 type alias，但当前实际固定走 MessagePack**（`envelope.rs`）。dist 项是为了兼容 Java 侧的 `Serializer` 调用方，后续可按 enum dispatch 真实现多格式。
 4. **`MemcachedCacheBackend` 的 generation 协议细节**：`add(0)` + `increment(1)` 兜底，但需要确认 memcached 服务器支持 `incr` 命令。
-5. **执行器集成仍未到位**：`Cargo.toml` 里 `rbatis = { path = "../rbatis" }`，但 `src/lib.rs` 模块注释里明确："RBatis 执行器集成（通过 `rbatis::intercept::Intercept`）与分布式 backend 在各自 crate / 仓库中开发。"——**下一步是把 `CacheInterceptor` 接入 `rbatis::intercept::Intercept`**（保留主仓库已有 `CacheIntercept` 为进程内默认；`rbatis-cache::CacheInterceptor` 为可选分布式 backend）。
+5. **执行器集成已落地**（2026-08）：`src/rbatis_intercept.rs::RbatisCacheInterceptor<B>` 实现
+   `rbatis::intercept::Intercept` 的 `before`/`after` 两段式钩子，配合
+   `src/plugin.rs::RbatisCacheExt::install_cache`（拦截器进 `RBatis::intercepts`、
+   监听器进 `RBatis::listeners`，不改动 rbatis 本体）与 `src/listener.rs::CacheTransactionListener`
+   （Begin 建缓冲 / Commit 冲刷 / Rollback 丢弃）。能力清单：
+   - L1（`src/l1.rs`，per-executor、有界、L2→L1 提升）+
+     L2（`CacheBackend` 字节级，BLAKE3 键，envelope 新鲜度）
+   - 跨钩子 singleflight（`src/singleflight.rs`，Notify 版，follower 超时降级）
+   - 事务模式 `Bypass`（默认）/ `Defer`（事务缓冲 `src/transactional.rs`）
+   - `CacheFailureMode::FailOpen`（默认）/ `FailClosed`、`UseCacheFilter`、
+     `cache_null` / `null_ttl`、`max_value_size`、`l1_max_entries`、`blocking`
+   - FOR UPDATE / FOR SHARE 排除（`src/sql.rs::SqlMetadata::is_cacheable`）
+   - DML（`rows_affected > 0`）→ 清 L1 + bump generation；事务内延迟到 commit
+   - 端到端测试 `tests/cache_test.rs`（24 个，计数 MockDriver + `TEST_LOCK`
+     串行化，覆盖 L1/L2 命中、DML 失效、事务、singleflight、fail-closed）
+   - 上游依赖：`fix/transaction-listener` 分支（TransactionListener hook +
+     apply_after 短路修复），发布后切 crates.io 版本。
 6. **`Default for CacheInterceptor<B>` 缺失**：现在必须显式 `CacheInterceptor::new(backend, policy)`；看未来是否要加 `default()` 走 `LocalBackend`。
 7. **CLI / 配置加载样板没内置**：与 RedisConfigurationBuilder / MemcachedConfigurationBuilder 不同，`CachePolicy` 暂时只能手写构造。
 8. **测试：** `rbatis-redis` / `rbatis-memcached` 还没有引入 `feature = "testing"` + `run_all` 的本地集成测试（套件 `tests/cache_contract.rs` 仅覆盖 `LocalBackend`）。
 
 ---
 
-如果你的目标是给主仓库 `rbatis` 加 Redis / Memcached backend，那么**入口**是 `rbatis-cache/src/interceptor.rs::CacheInterceptor`，并按 `interceptor::Intercept` trait 的形状适配 `rbatis::plugin::cache::CacheIntercept`（保留主仓缓存为默认，本仓库为可选 backend）。
+如果你的目标是给 rbatis 应用加 Redis / Memcached 二级缓存，那么**入口**是：
+
+```rust
+use rbatis_cache::{CachePolicy, LocalBackend, RbatisCacheExt, RbatisCacheInterceptor};
+use rbatis::RBatis;
+use std::sync::Arc;
+
+let rb = RBatis::new();
+// 进程内 backend：LocalBackend；分布式：rbatis_redis::RedisCacheBackend ...
+let cache = RbatisCacheInterceptor::new("ns", Arc::new(LocalBackend::new()), CachePolicy::default());
+let listener = cache.listener();
+rb.install_cache(Arc::new(cache), Some(Arc::new(listener)));
+```
+
+`RbatisCacheInterceptor`（执行器集成层）与 `CacheInterceptor::get_or_load`（手动流水线）
+共用同一 `CacheBackend` SPI：前者面向 rbatis 拦截器链（before/after + 事务监听器），
+后者供非 rbatis 场景直接调用。
