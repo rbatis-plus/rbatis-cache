@@ -67,7 +67,7 @@ pub use interceptor::{CacheInterceptor, CacheRequest};
 pub use key::{CacheKey, CacheKeyInput};
 pub use l1::L1Cache;
 pub use listener::CacheTransactionListener;
-pub use local_backend::{LocalBackend, LocalBackendConfig};
+pub use local_backend::{EvictionStrategy, LocalBackend, LocalBackendConfig};
 pub use metrics::{CacheMetrics, CacheMetricsSnapshot};
 pub use plugin::RbatisCacheExt;
 pub use policy::{CacheFailureMode, TransactionCacheMode, UseCacheFilter};
