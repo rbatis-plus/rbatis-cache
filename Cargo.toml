@@ -133,6 +133,8 @@ rbatis = { git = "file:///Users/wandl/workspaces/workspace-github-easy-4-rust/rb
 # 启用自身 testing 子模块供自身集成测试使用
 rbatis-cache = { path = ".", features = ["testing"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+# 真实数据库端到端测试（cache_sqlite_test）
+rbdc-sqlite = "4.9"
 
 # 契约测试 harness：供各 backend crate 在其 dev-dependencies 里启用，
 # 复用一组标准的 CacheBackend 契约断言（生成/读回/TTL 过期/原子 bump）。
