@@ -1,4 +1,4 @@
-//! 进程内 byte-level [`CacheBackend`]。
+//! 进程内 byte-level [`CacheBackend`]，支持 FIFO / LFU / LRU 淘汰策略。
 //!
 //! 对应 Java：`org.mybatis.caches.caffeine.CaffeineCache`
 //! （位于 `/workspace-github/caffeine-cache/src/main/java/org/mybatis/caches/caffeine/CaffeineCache.java`）。
@@ -11,16 +11,25 @@
 //! 协作支持 generation 失效。底层使用 [`dashmap`]（ConcurrentHashMap 等价）
 //! + 可选的后台清理线程。
 //!
+//! ## 淘汰策略（参考 Hutool `cn.hutool.cache`）
+//!
+//! | 策略 | 模块 | Hutool 对应 |
+//! |---|---|---|
+//! | FIFO | [`fifo::FifoPolicy`] | `FIFOCache` |
+//! | LFU  | [`lfu::LfuPolicy`]  | `LFUCache`（含公平计数器） |
+//! | LRU  | [`lru::LruPolicy`]  | `LRUCache` |
+//!
 //! ## Rust 侧增强（无 Java 对应）
 //!
 //! - TTL 由 [`crate::envelope::CacheEnvelope::is_fresh`] 判定（已在
 //!   interceptor 层处理）；backend 自身存储过期时间戳，按 lazy 或
 //!   后台线程（`cleanup_interval`）清理。
 //! - generation 原子计数由 `DashMap<String, AtomicU64>` 承担。
-//! - 大小上限驱逐：配置 `max_entries` 后启用，策略见 [`EvictionStrategy`]：
-//!   FIFO/LFU/LRU 对应 Hutool `cn.hutool.cache` 的 `FIFOCache` /
-//!   `LFUCache` / `LRUCache`（LFU 含 Hutool 的"满时减最小访问次数"
-//!   公平计数器语义）。
+//! - 大小上限驱逐：配置 `max_entries` 后启用，策略见 [`EvictionStrategy`]。
+
+pub mod fifo;
+pub mod lfu;
+pub mod lru;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc;
@@ -36,7 +45,7 @@ use crate::Result;
 
 /// 内部条目。
 #[derive(Clone)]
-struct Entry {
+pub(crate) struct Entry {
     /// 原始 envelope 字节。
     bytes: Vec<u8>,
     /// 过期时间（Unix epoch ms）。
@@ -220,32 +229,12 @@ impl LocalBackend {
 
     /// 按驱逐策略选出受害者。
     ///
-    /// LFU 参考 Hutool `LFUCache.pruneCache`：先对所有条目减去最小访问次数
-    /// （公平计数器），再驱逐访问最少且最旧的条目。
+    /// 委托给对应的策略模块（[`fifo::FifoPolicy`] / [`lfu::LfuPolicy`] / [`lru::LruPolicy`]）。
     fn victim_key(&self) -> Option<String> {
         match self.config.eviction {
-            EvictionStrategy::Fifo => self
-                .entries
-                .iter()
-                .min_by_key(|e| e.insert_seq)
-                .map(|e| e.key().clone()),
-            EvictionStrategy::Lfu => {
-                let min_access = self.entries.iter().map(|e| e.accesses).min();
-                if let Some(min_access) = min_access {
-                    for mut e in self.entries.iter_mut() {
-                        e.accesses = e.accesses.saturating_sub(min_access);
-                    }
-                }
-                self.entries
-                    .iter()
-                    .min_by_key(|e| (e.accesses, e.insert_seq))
-                    .map(|e| e.key().clone())
-            }
-            EvictionStrategy::Lru => self
-                .entries
-                .iter()
-                .min_by_key(|e| e.last_access_seq)
-                .map(|e| e.key().clone()),
+            EvictionStrategy::Fifo => fifo::FifoPolicy::pick_victim(&self.entries),
+            EvictionStrategy::Lfu => lfu::LfuPolicy::pick_victim(&self.entries),
+            EvictionStrategy::Lru => lru::LruPolicy::pick_victim(&self.entries),
         }
     }
 }

@@ -7,7 +7,7 @@
 //! ```
 
 use rbatis_cache::testing;
-use rbatis_redis::{RedisCacheBackend, RedisCacheConfig, RedisConfig};
+use rbatis_cache_redis::{RedisCacheBackend, RedisCacheConfig, RedisConfig};
 
 async fn connect() -> RedisCacheBackend {
     let config =

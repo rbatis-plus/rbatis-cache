@@ -1,4 +1,4 @@
-//! `rbatis-memcached` — Memcached 分布式 backend。
+//! `rbatis-cache-memcached` — Memcached 分布式 backend。
 //!
 //! Java 对照：`org.mybatis.caches.memcached.*`（位于
 //! `/workspace-github/memcached-cache/src/main/java/org/mybatis/caches/memcached/`）。

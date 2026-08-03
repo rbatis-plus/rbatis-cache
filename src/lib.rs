@@ -4,9 +4,9 @@
 //!
 //! | Java 适配器 | Rust 实现 | 模块 |
 //! |---|---|---|
-//! | `org.mybatis.caches.caffeine.CaffeineCache` | `rbatis-moka` | `rbatis-moka/src/moka_cache.rs` |
-//! | `org.mybatis.caches.redis.RedisCache` | `rbatis-redis` | `rbatis-redis/src/redis_cache.rs` |
-//! | `org.mybatis.caches.memcached.MemcachedCache` | `rbatis-memcached` | `rbatis-memcached/src/memcached_cache.rs` |
+//! | `org.mybatis.caches.caffeine.CaffeineCache` | `rbatis-cache-moka` | `rbatis-cache-moka/src/lib.rs` |
+//! | `org.mybatis.caches.redis.RedisCache` | `rbatis-cache-redis` | `rbatis-cache-redis/src/redis_cache.rs` |
+//! | `org.mybatis.caches.memcached.MemcachedCache` | `rbatis-cache-memcached` | `rbatis-cache-memcached/src/memcached_cache.rs` |
 //!
 //! 自身 (`rbatis-cache`) 只承担：
 //!
@@ -44,7 +44,7 @@ mod interceptor;
 mod key;
 mod l1;
 mod listener;
-mod local_backend;
+pub mod local;
 mod metrics;
 mod plugin;
 mod policy;
@@ -67,7 +67,7 @@ pub use interceptor::{CacheInterceptor, CacheRequest};
 pub use key::{CacheKey, CacheKeyInput};
 pub use l1::L1Cache;
 pub use listener::CacheTransactionListener;
-pub use local_backend::{EvictionStrategy, LocalBackend, LocalBackendConfig};
+pub use local::{EvictionStrategy, LocalBackend, LocalBackendConfig};
 pub use metrics::{CacheMetrics, CacheMetricsSnapshot};
 pub use plugin::RbatisCacheExt;
 pub use policy::{CacheFailureMode, TransactionCacheMode, UseCacheFilter};

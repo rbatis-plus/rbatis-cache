@@ -1,5 +1,5 @@
 [package]
-name = "rbatis-memcached"
+name = "rbatis-cache-memcached"
 version = "0.1.0-alpha.1"
 edition.workspace = true
 rust-version.workspace = true

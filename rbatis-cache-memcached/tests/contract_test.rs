@@ -7,7 +7,7 @@
 //! ```
 
 use rbatis_cache::testing;
-use rbatis_memcached::{MemcachedCacheBackend, MemcachedConfiguration};
+use rbatis_cache_memcached::{MemcachedCacheBackend, MemcachedConfiguration};
 
 fn connect() -> MemcachedCacheBackend {
     MemcachedCacheBackend::connect("contract-test", MemcachedConfiguration::default())

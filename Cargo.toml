@@ -3,10 +3,10 @@
 #
 # 本仓库是 rbatis 二级缓存生态的核心，按 Cargo workspace 组织为：
 #
-#   rbatis-cache       ── 二级缓存 SPI（root package）
-#   rbatis-moka        ── 进程内 backend（moka 实现，对应 Caffeine 适配器）
-#   rbatis-redis       ── Redis 分布式 backend（对应 mybatis-redis 适配器）
-#   rbatis-memcached   ── Memcached 分布式 backend（对应 mybatis-memcached 适配器）
+#   rbatis-cache            ── 二级缓存 SPI（root package）
+#   rbatis-cache-moka       ── 进程内 backend（moka 实现，对应 Caffeine 适配器）
+#   rbatis-cache-redis      ── Redis 分布式 backend（对应 mybatis-redis 适配器）
+#   rbatis-cache-memcached  ── Memcached 分布式 backend（对应 mybatis-memcached 适配器）
 #
 # 参考布局：
 #   - workspace.dependencies / workspace.package / workspace.lints：与 rbatis-plus
@@ -17,8 +17,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "rbatis-redis",
-    "rbatis-memcached",
+    "rbatis-cache-moka",
+    "rbatis-cache-redis",
+    "rbatis-cache-memcached",
 ]
 
 [workspace.package]

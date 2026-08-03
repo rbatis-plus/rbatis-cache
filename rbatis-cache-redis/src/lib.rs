@@ -1,4 +1,4 @@
-//! `rbatis-redis` — Redis 分布式 backend。
+//! `rbatis-cache-redis` — Redis 分布式 backend。
 //!
 //! Java 对照：`org.mybatis.caches.redis.*`（位于
 //! `/workspace-github/redis-cache/src/main/java/org/mybatis/caches/redis/`）。
