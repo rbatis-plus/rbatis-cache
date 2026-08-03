@@ -39,7 +39,10 @@ impl Driver for CountingMockDriver {
     fn name(&self) -> &'static str {
         "counting-cache-mock"
     }
-    fn connect(&self, _url: &str) -> BoxFuture<'_, Result<Box<dyn Connection>, rbatis::rbdc::Error>> {
+    fn connect(
+        &self,
+        _url: &str,
+    ) -> BoxFuture<'_, Result<Box<dyn Connection>, rbatis::rbdc::Error>> {
         Box::pin(async { Ok(Box::new(CountingConn) as Box<dyn Connection>) })
     }
     fn connect_opt<'a>(
@@ -95,8 +98,9 @@ impl Connection for CountingConn {
         QUERY_COUNT.fetch_add(1, Ordering::SeqCst);
         Box::pin(async {
             let row = Box::new(CountingRow) as Box<dyn Row>;
-            let s: Pin<Box<dyn Stream<Item = Result<Box<dyn Row>, rbatis::rbdc::Error>> + Send + '_>> =
-                Box::pin(futures::stream::iter(vec![Ok(row)]));
+            let s: Pin<
+                Box<dyn Stream<Item = Result<Box<dyn Row>, rbatis::rbdc::Error>> + Send + '_>,
+            > = Box::pin(futures::stream::iter(vec![Ok(row)]));
             Ok(s)
         })
     }
@@ -190,7 +194,11 @@ fn cache_hit_on_second_query() {
         assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 1, "first query hits DB");
 
         let _ = rb.query("select * from t", vec![]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 1, "second query hits cache");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            1,
+            "second query hits cache"
+        );
     });
 }
 
@@ -199,8 +207,14 @@ fn different_sql_caches_separately() {
     let _guard = TEST_LOCK.lock().unwrap();
     let rb = setup_rb_with_cache();
     block_on(async move {
-        let _ = rb.query("select * from t where id = 1", vec![]).await.unwrap();
-        let _ = rb.query("select * from t where id = 2", vec![]).await.unwrap();
+        let _ = rb
+            .query("select * from t where id = 1", vec![])
+            .await
+            .unwrap();
+        let _ = rb
+            .query("select * from t where id = 2", vec![])
+            .await
+            .unwrap();
         assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 2);
     });
 }
@@ -216,7 +230,11 @@ fn dml_invalidates_cache() {
         let _ = rb.exec("update t set x = 1", vec![]).await.unwrap();
 
         let _ = rb.query("select * from t", vec![]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 2, "cache invalidated after DML");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            2,
+            "cache invalidated after DML"
+        );
     });
 }
 
@@ -228,7 +246,11 @@ fn transaction_queries_bypass_cache() {
         let tx = rb.acquire_begin().await.unwrap();
         let _ = tx.query("select * from t", vec![]).await.unwrap();
         let _ = tx.query("select * from t", vec![]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 2, "tx queries always hit DB");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            2,
+            "tx queries always hit DB"
+        );
         tx.commit().await.unwrap();
     });
 }
@@ -246,7 +268,11 @@ fn commit_after_dml_clears_cache() {
         tx.commit().await.unwrap();
 
         let _ = rb.query("select * from t", vec![]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 2, "cache cleared after commit");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            2,
+            "cache cleared after commit"
+        );
     });
 }
 
@@ -263,7 +289,11 @@ fn rollback_does_not_clear_cache() {
         tx.rollback().await.unwrap();
 
         let _ = rb.query("select * from t", vec![]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 1, "cache preserved after rollback");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            1,
+            "cache preserved after rollback"
+        );
     });
 }
 
@@ -282,7 +312,11 @@ fn l1_promotes_l2_hit_to_l1() {
         assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 1);
         // Second query: should hit L1 (no DB call, no L2 lookup)
         let _ = conn.query("select * from t", vec![]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 1, "L1 hit should not call DB");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            1,
+            "L1 hit should not call DB"
+        );
     });
 }
 
@@ -299,7 +333,11 @@ fn l1_is_per_connection() {
         let conn2 = rb.acquire().await.unwrap();
         let _ = conn2.query("select * from t", vec![]).await.unwrap();
         // conn2 L1 miss but L2 hit → still 1 DB call
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 1, "L2 hit should not call DB");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            1,
+            "L2 hit should not call DB"
+        );
     });
 }
 
@@ -362,11 +400,21 @@ fn for_update_not_cached() {
     let _guard = TEST_LOCK.lock().unwrap();
     let rb = setup_rb_with_cache();
     block_on(async move {
-        let _ = rb.query("select * from t for update", vec![]).await.unwrap();
+        let _ = rb
+            .query("select * from t for update", vec![])
+            .await
+            .unwrap();
         assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 1);
         // Second query: FOR UPDATE is never cached → DB call again
-        let _ = rb.query("select * from t for update", vec![]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 2, "FOR UPDATE should not cache");
+        let _ = rb
+            .query("select * from t for update", vec![])
+            .await
+            .unwrap();
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            2,
+            "FOR UPDATE should not cache"
+        );
     });
 }
 
@@ -377,7 +425,11 @@ fn for_share_not_cached() {
     block_on(async move {
         let _ = rb.query("select * from t for share", vec![]).await.unwrap();
         let _ = rb.query("select * from t for share", vec![]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 2, "FOR SHARE should not cache");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            2,
+            "FOR SHARE should not cache"
+        );
     });
 }
 
@@ -402,12 +454,20 @@ fn use_cache_filter_excludes_pattern() {
         // temp_ query: not cached → DB every time
         let _ = rb.query("select * from temp_data", vec![]).await.unwrap();
         let _ = rb.query("select * from temp_data", vec![]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 2, "filtered SQL should not cache");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            2,
+            "filtered SQL should not cache"
+        );
 
         // normal query: cached
         let _ = rb.query("select * from real_data", vec![]).await.unwrap();
         let _ = rb.query("select * from real_data", vec![]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 3, "non-filtered SQL should cache after first");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            3,
+            "non-filtered SQL should cache after first"
+        );
     });
 }
 
@@ -432,7 +492,11 @@ fn defer_mode_tx_query_buffers_writes() {
         // After commit, buffer flushed → next query hits L2
         let _ = rb.query("select * from t", vec![]).await.unwrap();
         // commit flushed the buffer, so this should be an L2 hit (0 extra DB calls)
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 1, "defer commit should flush buffer");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            1,
+            "defer commit should flush buffer"
+        );
     });
 }
 
@@ -442,11 +506,17 @@ fn defer_mode_rollback_discards_buffer() {
     let rb = setup_rb_defer();
     block_on(async move {
         let tx = rb.acquire_begin().await.unwrap();
-        let _ = tx.query("select * from defer_rollback", vec![]).await.unwrap();
+        let _ = tx
+            .query("select * from defer_rollback", vec![])
+            .await
+            .unwrap();
         tx.rollback().await.unwrap();
 
         // After rollback: buffer discarded, query hits DB
-        let _ = rb.query("select * from defer_rollback", vec![]).await.unwrap();
+        let _ = rb
+            .query("select * from defer_rollback", vec![])
+            .await
+            .unwrap();
         assert!(
             QUERY_COUNT.load(Ordering::SeqCst) >= 1,
             "after rollback, buffer discarded → query hits DB"
@@ -479,9 +549,18 @@ fn different_args_produce_different_cache_entries() {
     let _guard = TEST_LOCK.lock().unwrap();
     let rb = setup_rb_with_cache();
     block_on(async move {
-        let _ = rb.query("select * from t where id = ?", vec![Value::I64(1)]).await.unwrap();
-        let _ = rb.query("select * from t where id = ?", vec![Value::I64(2)]).await.unwrap();
-        let _ = rb.query("select * from t where id = ?", vec![Value::I64(1)]).await.unwrap();
+        let _ = rb
+            .query("select * from t where id = ?", vec![Value::I64(1)])
+            .await
+            .unwrap();
+        let _ = rb
+            .query("select * from t where id = ?", vec![Value::I64(2)])
+            .await
+            .unwrap();
+        let _ = rb
+            .query("select * from t where id = ?", vec![Value::I64(1)])
+            .await
+            .unwrap();
         // 3rd query hits cache (same as 1st) → 2 DB calls
         assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 2);
     });
@@ -493,9 +572,16 @@ fn null_vs_string_arg_isolated() {
     let rb = setup_rb_with_cache();
     block_on(async move {
         let _ = rb.query("select ?", vec![Value::Null]).await.unwrap();
-        let _ = rb.query("select ?", vec![Value::String("null".into())]).await.unwrap();
+        let _ = rb
+            .query("select ?", vec![Value::String("null".into())])
+            .await
+            .unwrap();
         let _ = rb.query("select ?", vec![Value::Null]).await.unwrap();
-        assert_eq!(QUERY_COUNT.load(Ordering::SeqCst), 2, "null vs string should have different keys");
+        assert_eq!(
+            QUERY_COUNT.load(Ordering::SeqCst),
+            2,
+            "null vs string should have different keys"
+        );
     });
 }
 
@@ -545,7 +631,10 @@ impl CacheBackend for FailingBackend {
     fn generation<'a>(&'a self, _namespace: &'a str) -> BoxFuture<'a, Result<u64, CacheError>> {
         Box::pin(async { Err(CacheError::Backend("intentional failure".into())) })
     }
-    fn bump_generation<'a>(&'a self, _namespace: &'a str) -> BoxFuture<'a, Result<u64, CacheError>> {
+    fn bump_generation<'a>(
+        &'a self,
+        _namespace: &'a str,
+    ) -> BoxFuture<'a, Result<u64, CacheError>> {
         Box::pin(async { Err(CacheError::Backend("intentional failure".into())) })
     }
 }
@@ -561,7 +650,11 @@ fn fail_closed_backend_returns_error() {
         CachePolicy::default().with_failure_closed(),
     );
     // 覆盖为 FailingBackend（install_cache 用的是 LocalBackend，这里手动替换）
-    let cache = RbatisCacheInterceptor::new("fail_closed_ns", Arc::new(FailingBackend), CachePolicy::default().with_failure_closed());
+    let cache = RbatisCacheInterceptor::new(
+        "fail_closed_ns",
+        Arc::new(FailingBackend),
+        CachePolicy::default().with_failure_closed(),
+    );
     let listener = cache.listener();
     rb.intercepts.clear();
     rb.install_cache(Arc::new(cache), Some(Arc::new(listener)));
@@ -577,7 +670,11 @@ fn fail_open_backend_degrades_to_miss() {
     let _guard = TEST_LOCK.lock().unwrap();
     let rb = RBatis::new();
     rb.init(CountingMockDriver, "mock://test").unwrap();
-    let cache = RbatisCacheInterceptor::new("fail_open_ns", Arc::new(FailingBackend), CachePolicy::default());
+    let cache = RbatisCacheInterceptor::new(
+        "fail_open_ns",
+        Arc::new(FailingBackend),
+        CachePolicy::default(),
+    );
     let listener = cache.listener();
     rb.install_cache(Arc::new(cache), Some(Arc::new(listener)));
     block_on(async move {

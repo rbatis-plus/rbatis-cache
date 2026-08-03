@@ -13,9 +13,7 @@ use rbs::Value;
 use std::sync::Arc;
 use std::time::Duration;
 
-use rbatis_cache::{
-    CachePolicy, LocalBackend, RbatisCacheExt, RbatisCacheInterceptor,
-};
+use rbatis_cache::{CachePolicy, LocalBackend, RbatisCacheExt, RbatisCacheInterceptor};
 
 /// 建表 + 安装缓存，返回 (RBatis, 拦截器指标句柄)。
 fn setup() -> (RBatis, Arc<rbatis_cache::CacheMetrics>) {
@@ -150,7 +148,10 @@ fn real_tx_bypass_then_commit_invalidates() {
             )
             .await
             .unwrap();
-        assert!(v.to_string().contains("tx-updated"), "post-commit fresh: {v}");
+        assert!(
+            v.to_string().contains("tx-updated"),
+            "post-commit fresh: {v}"
+        );
         let m = metrics.snapshot();
         assert_eq!(m.misses, 2, "commit must invalidate cache, got {m:?}");
     });

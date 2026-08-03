@@ -155,17 +155,16 @@ where
     }
 
     /// 读取当前 generation 并构造键；backend 故障按 failure_mode 处理。
-    async fn resolve_key(
-        &self,
-        key_input: CacheKeyInput<'_>,
-    ) -> Result<CacheKey, Error> {
+    async fn resolve_key(&self, key_input: CacheKeyInput<'_>) -> Result<CacheKey, Error> {
         match self.backend.generation(key_input.namespace).await {
             Ok(generation) => CacheKey::build(key_input, generation)
                 .map_err(|e| Error::from(format!("[rbatis-cache] {e}"))),
             Err(e) => match self.policy.failure_mode {
                 CacheFailureMode::FailOpen => {
                     self.metrics.record_backend_error();
-                    Err(Error::from(format!("[rbatis-cache] generation fail-open: {e}")))
+                    Err(Error::from(format!(
+                        "[rbatis-cache] generation fail-open: {e}"
+                    )))
                 }
                 CacheFailureMode::FailClosed => Err(Error::from(format!(
                     "[rbatis-cache] generation fail-closed: {e}"
@@ -175,11 +174,7 @@ where
     }
 
     /// L1 + L2 联合查找；命中返回并把 L2 值提升到 L1。
-    async fn lookup_value(
-        &self,
-        executor_id: i64,
-        key: &CacheKey,
-    ) -> Result<Option<Value>, Error> {
+    async fn lookup_value(&self, executor_id: i64, key: &CacheKey) -> Result<Option<Value>, Error> {
         // L1
         if let Some(v) = self.l1.get(executor_id, key.digest()) {
             self.metrics.record_hit();
@@ -203,7 +198,9 @@ where
                 match self.policy.failure_mode {
                     CacheFailureMode::FailOpen => return Ok(None),
                     CacheFailureMode::FailClosed => {
-                        return Err(Error::from(format!("[rbatis-cache] L2 get fail-closed: {e}")))
+                        return Err(Error::from(format!(
+                            "[rbatis-cache] L2 get fail-closed: {e}"
+                        )))
                     }
                 }
             }
@@ -222,7 +219,12 @@ where
     }
 
     /// 回填 L2（受 max_value_size 与 failure_mode 约束）。
-    async fn store_value(&self, key: &CacheKey, value: &Value, ttl: std::time::Duration) -> Result<(), Error> {
+    async fn store_value(
+        &self,
+        key: &CacheKey,
+        value: &Value,
+        ttl: std::time::Duration,
+    ) -> Result<(), Error> {
         let payload = rmp_serde::to_vec_named(value)
             .map_err(|e| Error::from(format!("[rbatis-cache] encode: {e}")))?;
         if payload.len() > self.policy.max_value_size {

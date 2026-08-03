@@ -66,9 +66,7 @@ impl SingleFlight {
                 v.insert(Arc::clone(&state));
                 LoadRole::Leader
             }
-            dashmap::mapref::entry::Entry::Occupied(o) => {
-                LoadRole::Follower(Arc::clone(o.get()))
-            }
+            dashmap::mapref::entry::Entry::Occupied(o) => LoadRole::Follower(Arc::clone(o.get())),
         }
     }
 

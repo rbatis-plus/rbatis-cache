@@ -71,8 +71,8 @@ impl SqlMetadata {
             .collect::<Vec<_>>()
             .join("; ");
         let lower = canonical.to_ascii_lowercase();
-        let locking_select =
-            kind == StatementKind::Select && (lower.contains("for update") || lower.contains("for share"));
+        let locking_select = kind == StatementKind::Select
+            && (lower.contains("for update") || lower.contains("for share"));
         Ok(Self {
             // 多个语句以 "; " 连接；单语句则与原文一致（解析器规范化后输出）。
             canonical_sql: canonical,

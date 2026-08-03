@@ -10,9 +10,8 @@ use rbatis_cache::testing;
 use rbatis_redis::{RedisCacheBackend, RedisCacheConfig, RedisConfig};
 
 async fn connect() -> RedisCacheBackend {
-    let config = RedisCacheConfig::from_redis(
-        RedisConfig::standalone().with_url("redis://127.0.0.1:6379"),
-    );
+    let config =
+        RedisCacheConfig::from_redis(RedisConfig::standalone().with_url("redis://127.0.0.1:6379"));
     RedisCacheBackend::connect("contract-test", config)
         .await
         .expect("connect to local redis must succeed")

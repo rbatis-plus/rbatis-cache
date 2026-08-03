@@ -178,12 +178,7 @@ where
         };
         let key = CacheKey::build(key_input, generation)?;
         let envelope = CacheEnvelope::new(&key, payload, ttl).encode()?;
-        if self
-            .backend
-            .put(key.digest(), envelope, ttl)
-            .await
-            .is_err()
-        {
+        if self.backend.put(key.digest(), envelope, ttl).await.is_err() {
             self.metrics.record_backend_error();
             // failure_mode 由执行器集成层决定如何向调用方传播。
         }

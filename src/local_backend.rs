@@ -143,8 +143,7 @@ impl LocalBackend {
                 let worker = thread::spawn(move || {
                     while rx.recv_timeout(interval).is_err() {
                         let now = now_ms();
-                        entries_for_thread
-                            .retain(|_, e| e.expires_at_ms > now);
+                        entries_for_thread.retain(|_, e| e.expires_at_ms > now);
                     }
                 });
                 (Some(tx), Some(worker))
@@ -376,7 +375,10 @@ mod tests {
     use futures::FutureExt;
 
     fn put(b: &LocalBackend, key: &str, payload: u8) {
-        b.put(key, vec![payload], Duration::from_secs(60)).now_or_never().unwrap().unwrap();
+        b.put(key, vec![payload], Duration::from_secs(60))
+            .now_or_never()
+            .unwrap()
+            .unwrap();
     }
 
     fn get(b: &LocalBackend, key: &str) -> Option<u8> {
@@ -395,9 +397,7 @@ mod tests {
 
     #[test]
     fn fifo_evicts_oldest_inserted() {
-        let b = LocalBackend::with_config(
-            LocalBackendConfig::default().with_max_entries_fifo(3),
-        );
+        let b = LocalBackend::with_config(LocalBackendConfig::default().with_max_entries_fifo(3));
         put(&b, "a", 1);
         put(&b, "b", 2);
         put(&b, "c", 3);
@@ -410,9 +410,7 @@ mod tests {
 
     #[test]
     fn lru_evicts_least_recently_used() {
-        let b = LocalBackend::with_config(
-            LocalBackendConfig::default().with_max_entries_lru(3),
-        );
+        let b = LocalBackend::with_config(LocalBackendConfig::default().with_max_entries_lru(3));
         put(&b, "a", 1);
         put(&b, "b", 2);
         put(&b, "c", 3);
@@ -428,9 +426,7 @@ mod tests {
 
     #[test]
     fn lfu_evicts_least_frequently_used() {
-        let b = LocalBackend::with_config(
-            LocalBackendConfig::default().with_max_entries_lfu(3),
-        );
+        let b = LocalBackend::with_config(LocalBackendConfig::default().with_max_entries_lfu(3));
         put(&b, "a", 1);
         put(&b, "b", 2);
         put(&b, "c", 3);
@@ -440,7 +436,11 @@ mod tests {
         let _ = get(&b, "c");
         put(&b, "d", 4);
         assert_eq!(b.entry_count(), 3);
-        assert_eq!(get(&b, "b"), None, "LFU must evict the least frequently used");
+        assert_eq!(
+            get(&b, "b"),
+            None,
+            "LFU must evict the least frequently used"
+        );
         assert_eq!(get(&b, "a"), Some(1));
         assert_eq!(get(&b, "c"), Some(3));
         assert_eq!(get(&b, "d"), Some(4));
@@ -450,16 +450,18 @@ mod tests {
     fn lfu_fairness_subtracts_min_access() {
         // Hutool LFUCache.pruneCache 语义：满时先对所有条目减去最小访问次数，
         // 保证新条目（0 次）不会被老条目（高次数）长期排挤。
-        let b = LocalBackend::with_config(
-            LocalBackendConfig::default().with_max_entries_lfu(2),
-        );
+        let b = LocalBackend::with_config(LocalBackendConfig::default().with_max_entries_lfu(2));
         put(&b, "a", 1);
         put(&b, "b", 2);
         let _ = get(&b, "a");
         let _ = get(&b, "a");
         // 满（2/2）：插入 "c" 触发驱逐。减最小次数(0)后 a=2,b=0 → 驱逐 b。
         put(&b, "c", 3);
-        assert_eq!(get(&b, "b"), None, "min-access subtraction must still evict the lowest");
+        assert_eq!(
+            get(&b, "b"),
+            None,
+            "min-access subtraction must still evict the lowest"
+        );
         assert_eq!(get(&b, "a"), Some(1));
         assert_eq!(get(&b, "c"), Some(3));
     }
@@ -468,8 +470,7 @@ mod tests {
     fn background_cleanup_removes_expired() {
         // 短 TTL + 短清理间隔：过期条目由后台线程回收。
         let b = LocalBackend::with_config(
-            LocalBackendConfig::default()
-                .with_cleanup_interval(Some(Duration::from_millis(30))),
+            LocalBackendConfig::default().with_cleanup_interval(Some(Duration::from_millis(30))),
         );
         b.put("k", vec![1], Duration::from_millis(20))
             .now_or_never()
@@ -477,7 +478,11 @@ mod tests {
             .unwrap();
         assert_eq!(b.entry_count(), 1);
         std::thread::sleep(Duration::from_millis(120));
-        assert_eq!(b.entry_count(), 0, "background prune must remove expired entries");
+        assert_eq!(
+            b.entry_count(),
+            0,
+            "background prune must remove expired entries"
+        );
     }
 
     #[test]
@@ -491,4 +496,3 @@ mod tests {
         std::thread::sleep(Duration::from_millis(40));
     }
 }
-
