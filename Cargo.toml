@@ -128,7 +128,7 @@ tokio.workspace = true
 # 切换时机：fix/transaction-listener 分支 PR 合入 rbatis 上游并发布后，
 # 把下面依赖改为 https 仓库（或 crates.io 版本）：
 #   rbatis = { git = "https://github.com/rbatis-plus/rbatis.git", branch = "fix/transaction-listener" }
-rbatis = { git = "file:///Users/wandl/workspaces/workspace-github-easy-4-rust/rbatis", branch = "fix/transaction-listener" }
+rbatis = { git = "https://github.com/rbatis-plus/rbatis.git", branch = "fix/transaction-listener" }
 
 [dev-dependencies]
 # 启用自身 testing 子模块供自身集成测试使用
